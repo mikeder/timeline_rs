@@ -26,7 +26,7 @@ fn main() {
 
     let web_options = eframe::WebOptions::default();
     eframe::start_web(
-        "TimelineRS", // hardcode it
+        "timeline_rs", // hardcode it
         web_options,
         Box::new(|cc| Box::new(timeline_rs::TemplateApp::new(cc))),
     )
