@@ -9,9 +9,9 @@ fn main() {
 
     let native_options = eframe::NativeOptions::default();
     eframe::run_native(
-        "eframe template",
+        "TimelineRS",
         native_options,
-        Box::new(|cc| Box::new(eframe_template::TemplateApp::new(cc))),
+        Box::new(|cc| Box::new(timeline_rs::TemplateApp::new(cc))),
     );
 }
 
@@ -26,9 +26,9 @@ fn main() {
 
     let web_options = eframe::WebOptions::default();
     eframe::start_web(
-        "the_canvas_id", // hardcode it
+        "TimelineRS", // hardcode it
         web_options,
-        Box::new(|cc| Box::new(eframe_template::TemplateApp::new(cc))),
+        Box::new(|cc| Box::new(timeline_rs::TemplateApp::new(cc))),
     )
     .expect("failed to start eframe");
 }
