@@ -1,26 +1,38 @@
+use core::str;
+
+use egui::Ui;
+// use egui_datepicker::{Date, DatePicker, Utc};
+
+mod event;
+
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
-pub struct TemplateApp {
-    // Example stuff:
-    label: String,
-
+pub struct TimelineApp {
     // this how you opt-out of serialization of a member
-    #[serde(skip)]
-    value: f32,
+    // #[serde(skip)]
+    // value: f32,
+
+    // Show splash
+    splash_enabled: bool,
+
+    // Events
+    add_event: event::AddEvent,
+    events: Vec<event::Event>,
 }
 
-impl Default for TemplateApp {
+impl Default for TimelineApp {
     fn default() -> Self {
         Self {
-            // Example stuff:
-            label: "Hello World!".to_owned(),
-            value: 2.7,
+            splash_enabled: true,
+            events: vec![],
+
+            add_event: event::AddEvent::default(),
         }
     }
 }
 
-impl TemplateApp {
+impl TimelineApp {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customized the look at feel of egui using
@@ -34,9 +46,27 @@ impl TemplateApp {
 
         Default::default()
     }
+
+    pub fn show_about(&mut self, ctx: &egui::Context) -> bool {
+        egui::Window::new("TimelineRS")
+            .collapsible(false)
+            .open(&mut self.splash_enabled)
+            .auto_sized()
+            .show(ctx, |ui| {
+                ui.label("TimelineRS is a simple timeline app written in Rust!");
+                ui.hyperlink("https://github.com/mikeder/timeline_rs");
+                egui::warn_if_debug_build(ui);
+            })
+            .is_none()
+    }
 }
 
-impl eframe::App for TemplateApp {
+impl eframe::App for TimelineApp {
+    // Set auto save interval
+    fn auto_save_interval(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(10)
+    }
+
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         eframe::set_value(storage, eframe::APP_KEY, self);
@@ -45,63 +75,86 @@ impl eframe::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let Self { label, value } = self;
-
-        // Examples of how to create different panels and windows.
-        // Pick whichever suits you.
-        // Tip: a good default choice is to just keep the `CentralPanel`.
-        // For inspiration and more examples, go to https://emilk.github.io/egui
+        let Self {
+            events: _,
+            add_event: _,
+            splash_enabled: _,
+        } = self;
 
         #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
+                    if ui.button("Reset").clicked() {
+                        self.events = vec![];
+                        self.add_event.event = event::Event::default();
+                        self.add_event.open = false;
+                        ui.close_menu();
+                    }
                     if ui.button("Quit").clicked() {
                         _frame.close();
+                    }
+                });
+                ui.menu_button("Help", |ui| {
+                    if ui.button("About").clicked() {
+                        self.splash_enabled = true;
+                        _ = self.show_about(ctx);
+                        ui.close_menu();
                     }
                 });
             });
         });
 
-        egui::SidePanel::left("side_panel").show(ctx, |ui| {
-            ui.heading("Side Panel");
+        egui::CentralPanel::default().show(ctx, |ui| {
+            // Show splash/about screen if enabled
+            if self.splash_enabled {
+                let closed = self.show_about(ctx);
+                if closed {
+                    self.splash_enabled = false;
 
-            ui.horizontal(|ui| {
-                ui.label("Write something: ");
-                ui.text_edit_singleline(label);
-            });
-
-            ui.add(egui::Slider::new(value, 0.0..=10.0).text("value"));
-            if ui.button("Increment").clicked() {
-                *value += 1.0;
+                    let storage = _frame.storage_mut();
+                    match storage {
+                        None => println!("no storage"),
+                        Some(s) => {
+                            println!("saving to storage");
+                            self.save(s);
+                        }
+                    }
+                };
             }
 
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x = 0.0;
-                    ui.label("powered by ");
-                    ui.hyperlink_to("egui", "https://github.com/emilk/egui");
-                    ui.label(" and ");
-                    ui.hyperlink_to(
-                        "eframe",
-                        "https://github.com/emilk/egui/tree/master/crates/eframe",
-                    );
-                    ui.label(".");
-                });
+            // position buttons across the top
+            ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+                if ui.button("Add Event").clicked() {
+                    self.add_event.open = true
+                }
             });
-        });
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            // The central panel the region left after adding TopPanel's and SidePanel's
+            if self.add_event.open {
+                self.add_event.show(ui);
+            }
+            if self.add_event.submitted {
+                let e = self.add_event.event.clone();
+                self.events.push(e);
+                self.add_event = event::AddEvent::default();
+            }
 
-            ui.heading("eframe template");
-            ui.hyperlink("https://github.com/emilk/eframe_template");
-            ui.add(egui::github_link_file!(
-                "https://github.com/emilk/eframe_template/blob/master/",
-                "Source code."
-            ));
-            egui::warn_if_debug_build(ui);
+            ui.add(egui::Separator::default());
+
+            egui::ScrollArea::vertical().show(ui, |ui: &mut Ui| {
+                self.events.sort_by_key(|x| x.datetime);
+                for e in self.events.iter() {
+                    ui.label(
+                        egui::RichText::new(&e.datetime.to_string())
+                            .color(egui::Color32::LIGHT_GRAY),
+                    );
+                    ui.columns(2, |columns| {
+                        columns[0].label(&e.name);
+                        columns[1].label(&e.desc);
+                    })
+                }
+            });
         });
 
         if false {
