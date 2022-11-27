@@ -3,7 +3,7 @@ var filesToCache = [
   './',
   './index.html',
   './timeline_rs.js',
-  './timeline_rs.wasm',
+  './timeline_rs_bg.wasm',
 ];
 
 /* Start the service worker and cache all of the app's content */
