@@ -1,11 +1,9 @@
-use std::str::FromStr;
-
 // https://github.com/emilk/egui/discussions/1598
 use chrono::{Datelike, Timelike, Utc};
 
 use egui::Ui;
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Default, serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct AddEvent {
     pub open: bool,
@@ -27,16 +25,6 @@ impl Default for Event {
             name: String::new(),
             datetime: Utc::now().naive_local(),
             desc: String::new(),
-        }
-    }
-}
-
-impl Default for AddEvent {
-    fn default() -> Self {
-        Self {
-            open: false,
-            event: Event::default(),
-            submitted: false,
         }
     }
 }
