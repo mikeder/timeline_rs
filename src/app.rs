@@ -1,35 +1,22 @@
 use core::str;
 
-use egui::Ui;
-// use egui_datepicker::{Date, DatePicker, Utc};
-
+mod about;
 mod event;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Default, serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TimelineApp {
     // this how you opt-out of serialization of a member
     // #[serde(skip)]
     // value: f32,
 
-    // Show splash
-    splash_enabled: bool,
+    // About window
+    about: about::About,
 
     // Events
     add_event: event::AddEvent,
     events: Vec<event::Event>,
-}
-
-impl Default for TimelineApp {
-    fn default() -> Self {
-        Self {
-            splash_enabled: true,
-            events: vec![],
-
-            add_event: event::AddEvent::default(),
-        }
-    }
 }
 
 impl TimelineApp {
@@ -45,19 +32,6 @@ impl TimelineApp {
         }
 
         Default::default()
-    }
-
-    pub fn show_about(&mut self, ctx: &egui::Context) -> bool {
-        egui::Window::new("TimelineRS")
-            .collapsible(false)
-            .open(&mut self.splash_enabled)
-            .auto_sized()
-            .show(ctx, |ui| {
-                ui.label("TimelineRS is a simple timeline app written in Rust!");
-                ui.hyperlink("https://github.com/mikeder/timeline_rs");
-                egui::warn_if_debug_build(ui);
-            })
-            .is_none()
     }
 }
 
@@ -76,9 +50,9 @@ impl eframe::App for TimelineApp {
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let Self {
+            about: _,
             events: _,
             add_event: _,
-            splash_enabled: _,
         } = self;
 
         #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
@@ -98,8 +72,8 @@ impl eframe::App for TimelineApp {
                 });
                 ui.menu_button("Help", |ui| {
                     if ui.button("About").clicked() {
-                        self.splash_enabled = true;
-                        _ = self.show_about(ctx);
+                        self.about.open = true;
+                        self.about.show(ui);
                         ui.close_menu();
                     }
                 });
@@ -107,54 +81,49 @@ impl eframe::App for TimelineApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            // Show splash/about screen if enabled
-            if self.splash_enabled {
-                let closed = self.show_about(ctx);
-                if closed {
-                    self.splash_enabled = false;
-
-                    let storage = _frame.storage_mut();
-                    match storage {
-                        None => println!("no storage"),
-                        Some(s) => {
-                            println!("saving to storage");
-                            self.save(s);
-                        }
-                    }
-                };
+            // show about window
+            if self.about.open {
+                self.about.show(ui)
             }
 
-            // position buttons across the top
-            ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
-                if ui.button("Add Event").clicked() {
-                    self.add_event.open = true
-                }
-            });
-
+            // show add event window
             if self.add_event.open {
                 self.add_event.show(ui);
             }
+            // add new event if one is submitted
             if self.add_event.submitted {
                 let e = self.add_event.event.clone();
                 self.events.push(e);
+                self.events.sort_by_key(|x| x.datetime);
                 self.add_event = event::AddEvent::default();
             }
 
-            ui.add(egui::Separator::default());
+            egui::ScrollArea::both().show(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    for e in self.events.iter() {
+                        ui.label(
+                            egui::RichText::new(&e.datetime.to_string())
+                                .color(egui::Color32::LIGHT_GRAY),
+                        );
+                        ui.horizontal(|ui| {
+                            ui.label(&e.name);
+                            ui.label(&e.desc);
+                        });
+                        ui.separator();
+                    }
+                });
+            })
+        });
 
-            egui::ScrollArea::vertical().show(ui, |ui: &mut Ui| {
-                self.events.sort_by_key(|x| x.datetime);
-                for e in self.events.iter() {
-                    ui.label(
-                        egui::RichText::new(&e.datetime.to_string())
-                            .color(egui::Color32::LIGHT_GRAY),
-                    );
-                    ui.columns(2, |columns| {
-                        columns[0].label(&e.name);
-                        columns[1].label(&e.desc);
-                    })
+        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
+            ui.centered_and_justified(|ui| {
+                // style this button
+                ui.style_mut().spacing.button_padding = egui::vec2(10.0, 10.0);
+
+                if ui.button("Add Event").clicked() {
+                    self.add_event.open = true
                 }
-            });
+            })
         });
 
         if false {
