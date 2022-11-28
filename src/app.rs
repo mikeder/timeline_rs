@@ -105,10 +105,8 @@ impl eframe::App for TimelineApp {
                             egui::RichText::new(&e.datetime.to_string())
                                 .color(egui::Color32::LIGHT_GRAY),
                         );
-                        ui.horizontal(|ui| {
-                            ui.label(&e.name);
-                            ui.label(&e.desc);
-                        });
+                        ui.label(&e.name);
+                        ui.label(&e.desc);
                         ui.separator();
                     }
                 });
@@ -116,7 +114,7 @@ impl eframe::App for TimelineApp {
         });
 
         egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
-            ui.centered_and_justified(|ui| {
+            ui.vertical_centered(|ui| {
                 // style this button
                 ui.style_mut().spacing.button_padding = egui::vec2(10.0, 10.0);
 
