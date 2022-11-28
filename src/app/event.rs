@@ -42,13 +42,53 @@ impl AddEvent {
     }
 
     pub fn ui(&mut self, ui: &mut Ui) {
-        ui.label("Name:");
-        ui.text_edit_singleline(&mut self.event.name);
-
-        // date picker
+        // date pickers
         ui.label("Date:");
-        let mut date = chrono::Date::from_utc(self.event.datetime.date(), chrono::Utc);
-        ui.add(egui_extras::DatePickerButton::new(&mut date));
+        let date = self.event.datetime.date();
+        let mut year = date.year();
+        let mut month = date.month();
+        let mut day = date.day();
+
+        ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+            // year
+            ui.label("Y");
+            egui::ComboBox::from_id_source("year")
+                .selected_text(format!("{:?}", year))
+                .width(45.0)
+                .show_ui(ui, |ui| {
+                    for n in date.year() - 5..date.year() {
+                        ui.push_id(format!("year{:?}", n), |ui| {
+                            ui.selectable_value(&mut year, n, n.to_string());
+                        });
+                    }
+                });
+
+            // month
+            ui.label("M");
+            egui::ComboBox::from_id_source("month")
+                .selected_text(format!("{:?}", month))
+                .width(45.0)
+                .show_ui(ui, |ui| {
+                    for n in 1..=12 {
+                        ui.push_id(format!("month{:?}", n), |ui| {
+                            ui.selectable_value(&mut month, n, n.to_string());
+                        });
+                    }
+                });
+
+            // day
+            ui.label("D");
+            egui::ComboBox::from_id_source("day")
+                .selected_text(format!("{:?}", day))
+                .width(45.0)
+                .show_ui(ui, |ui| {
+                    for n in 1..=31 {
+                        ui.push_id(format!("day{:?}", n), |ui| {
+                            ui.selectable_value(&mut day, n, n.to_string());
+                        });
+                    }
+                });
+        });
 
         let time = self.event.datetime.time();
         let mut hour = time.hour();
@@ -96,16 +136,18 @@ impl AddEvent {
                 });
         });
 
-        self.event.datetime =
-            chrono::NaiveDate::from_ymd_opt(date.year(), date.month(), date.day())
-                .unwrap()
-                .and_hms_opt(hour, min, sec)
-                .unwrap();
+        self.event.datetime = chrono::NaiveDate::from_ymd_opt(year, month, day)
+            .unwrap()
+            .and_hms_opt(hour, min, sec)
+            .unwrap();
+
+        ui.label("Name:");
+        ui.text_edit_singleline(&mut self.event.name);
 
         ui.label("Description:");
         ui.text_edit_multiline(&mut self.event.desc);
 
-        ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+        ui.horizontal(|ui| {
             if ui.button("Add").clicked() {
                 self.submitted = true;
             }
