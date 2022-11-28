@@ -18,7 +18,7 @@ fn main() {
         hardware_acceleration: eframe::HardwareAcceleration::Preferred,
         icon_data: None,
         initial_window_pos: None,
-        initial_window_size: Option::from(egui::Vec2::new(800 as f32, 600 as f32)),
+        initial_window_size: Option::from(egui::Vec2::new(800_f32, 600_f32)),
         min_window_size: None,
         max_window_size: None,
         renderer: eframe::Renderer::Glow,
