@@ -1,5 +1,9 @@
 use core::str;
 
+use egui::FontFamily::Proportional;
+use egui::FontId;
+use egui::TextStyle::*;
+
 mod about;
 mod event;
 
@@ -30,6 +34,25 @@ impl TimelineApp {
         if let Some(storage) = cc.storage {
             return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
         }
+
+        let mut s = (*cc.egui_ctx.style()).clone();
+
+        // Redefine text_styles
+        s.text_styles = [
+            (Heading, FontId::new(30.0, Proportional)),
+            (Name("Heading2".into()), FontId::new(25.0, Proportional)),
+            (Name("Context".into()), FontId::new(23.0, Proportional)),
+            (Body, FontId::new(18.0, Proportional)),
+            (Monospace, FontId::new(17.0, Proportional)),
+            (Button, FontId::new(25.0, Proportional)),
+            (Small, FontId::new(25.0, Proportional)),
+        ]
+        .into();
+        // s.spacing.item_spacing =
+        s.spacing.item_spacing = egui::vec2(100.0, 20.0);
+
+        // Mutate global style with above changes
+        cc.egui_ctx.set_style(s);
 
         Default::default()
     }
@@ -94,22 +117,25 @@ impl eframe::App for TimelineApp {
             if self.add_event.submitted {
                 let e = self.add_event.event.clone();
                 self.events.push(e);
-                self.events.sort_by_key(|x| x.datetime);
+                self.events.sort_by(|a, b| b.datetime.cmp(&a.datetime));
+                // self.events.sort_by_key(|x| x.datetime);
                 self.add_event = event::AddEvent::default();
             }
 
-            egui::ScrollArea::both().show(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    for e in self.events.iter() {
-                        ui.label(
-                            egui::RichText::new(&e.datetime.to_string())
-                                .color(egui::Color32::LIGHT_GRAY),
-                        );
-                        ui.label(&e.name);
-                        ui.label(&e.desc);
-                        ui.separator();
-                    }
-                });
+            egui::Window::new("Events").show(ctx, |ui| {
+                egui::ScrollArea::both().show(ui, |ui| {
+                    ui.vertical_centered(|ui| {
+                        for e in self.events.iter() {
+                            ui.label(
+                                egui::RichText::new(&e.datetime.to_string())
+                                    .color(egui::Color32::LIGHT_GRAY),
+                            );
+                            ui.label(&e.name);
+                            ui.label(&e.desc);
+                            ui.separator();
+                        }
+                    });
+                })
             })
         });
 
