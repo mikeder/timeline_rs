@@ -147,7 +147,7 @@ impl AddEvent {
         ui.label("Description:");
         ui.text_edit_multiline(&mut self.event.desc);
 
-        ui.horizontal(|ui| {
+        ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
             if ui.button("Add").clicked() {
                 self.submitted = true;
             }
