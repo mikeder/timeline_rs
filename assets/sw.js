@@ -1,4 +1,4 @@
-var cacheName = 'egui-template-pwa';
+var cacheName = 'timeline_rs';
 var filesToCache = [
   './',
   './index.html',
@@ -9,6 +9,8 @@ var filesToCache = [
 /* Start the service worker and cache all of the app's content */
 self.addEventListener('install', function (e) {
   e.waitUntil(
+    console.log("wait install"),
+    resetCacheForUpdate(),
     caches.open(cacheName).then(function (cache) {
       return cache.addAll(filesToCache);
     })
@@ -23,3 +25,24 @@ self.addEventListener('fetch', function (e) {
     })
   );
 });
+
+async function deleteCaches() {
+  console.log("delete caches")
+  try {
+    const keys = await window.caches.keys();
+    await Promise.all(keys.map(key => caches.delete(key)));
+  } catch (err) {
+    console.log('deleteCache err: ', err);
+  }
+}
+
+// run this function on your app load
+function resetCacheForUpdate() {
+  console.log("reset cache for update")
+  if (!localStorage.getItem('cacheReset')) {
+    deleteCaches()
+      .then(_ => {
+        localStorage.setItem('cacheReset', 'yes');
+      })
+  }
+}
