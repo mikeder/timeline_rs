@@ -54,9 +54,8 @@ impl AddEvent {
             ui.label("Y");
             egui::ComboBox::from_id_source("year")
                 .selected_text(format!("{:?}", year))
-                .width(45.0)
                 .show_ui(ui, |ui| {
-                    for n in date.year() - 5..date.year() {
+                    for n in date.year() - 5..date.year() + 5 {
                         ui.push_id(format!("year{:?}", n), |ui| {
                             ui.selectable_value(&mut year, n, n.to_string());
                         });
@@ -67,7 +66,6 @@ impl AddEvent {
             ui.label("M");
             egui::ComboBox::from_id_source("month")
                 .selected_text(format!("{:?}", month))
-                .width(45.0)
                 .show_ui(ui, |ui| {
                     for n in 1..=12 {
                         ui.push_id(format!("month{:?}", n), |ui| {
@@ -80,7 +78,6 @@ impl AddEvent {
             ui.label("D");
             egui::ComboBox::from_id_source("day")
                 .selected_text(format!("{:?}", day))
-                .width(45.0)
                 .show_ui(ui, |ui| {
                     for n in 1..=31 {
                         ui.push_id(format!("day{:?}", n), |ui| {
@@ -102,7 +99,6 @@ impl AddEvent {
             ui.label("H");
             egui::ComboBox::from_id_source("H")
                 .selected_text(format!("{:?}", hour))
-                .width(45.0)
                 .show_ui(ui, |ui| {
                     for n in 0..=23 {
                         ui.push_id(format!("H{:?}", n), |ui| {
@@ -114,7 +110,6 @@ impl AddEvent {
             ui.label("M");
             egui::ComboBox::from_id_source("M")
                 .selected_text(format!("{:?}", min))
-                .width(45.0)
                 .show_ui(ui, |ui| {
                     for n in 0..=59 {
                         ui.push_id(format!("M{:?}", n), |ui| {
@@ -126,7 +121,6 @@ impl AddEvent {
             ui.label("S");
             egui::ComboBox::from_id_source("S")
                 .selected_text(format!("{:?}", sec))
-                .width(45.0)
                 .show_ui(ui, |ui| {
                     for n in 0..=59 {
                         ui.push_id(format!("S{:?}", n), |ui| {

@@ -6,29 +6,25 @@ use egui::TextStyle::*;
 
 mod about;
 mod event;
+mod toggle;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(Default, serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TimelineApp {
-    // this how you opt-out of serialization of a member
-    // #[serde(skip)]
-    // value: f32,
-
     // About window
     about: about::About,
 
     // Events
     add_event: event::AddEvent,
     events: Vec<event::Event>,
+
+    light: bool,
 }
 
 impl TimelineApp {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        // This is also where you can customized the look at feel of egui using
-        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
@@ -42,14 +38,12 @@ impl TimelineApp {
             (Heading, FontId::new(30.0, Proportional)),
             (Name("Heading2".into()), FontId::new(25.0, Proportional)),
             (Name("Context".into()), FontId::new(23.0, Proportional)),
-            (Body, FontId::new(18.0, Proportional)),
-            (Monospace, FontId::new(17.0, Proportional)),
-            (Button, FontId::new(25.0, Proportional)),
+            (Body, FontId::new(22.0, Proportional)),
+            (Monospace, FontId::new(20.0, Proportional)),
+            (Button, FontId::new(35.0, Proportional)),
             (Small, FontId::new(25.0, Proportional)),
         ]
         .into();
-        // s.spacing.item_spacing =
-        s.spacing.item_spacing = egui::vec2(100.0, 20.0);
 
         // Mutate global style with above changes
         cc.egui_ctx.set_style(s);
@@ -76,6 +70,7 @@ impl eframe::App for TimelineApp {
             about: _,
             events: _,
             add_event: _,
+            light: _,
         } = self;
 
         #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
@@ -99,43 +94,51 @@ impl eframe::App for TimelineApp {
                         self.about.show(ui);
                         ui.close_menu();
                     }
+                    ui.menu_button("Visuals", |ui| {
+                        if ui.button("Dark").clicked() {
+                            ctx.set_visuals(egui::Visuals::dark())
+                        }
+                        if ui.button("Light").clicked() {
+                            ctx.set_visuals(egui::Visuals::light())
+                        }
+                    })
                 });
             });
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            // show about window
-            if self.about.open {
-                self.about.show(ui)
-            }
-
-            // show add event window
-            if self.add_event.open {
-                self.add_event.show(ui);
-            }
-            // add new event if one is submitted
-            if self.add_event.submitted {
-                let e = self.add_event.event.clone();
-                self.events.push(e);
-                self.events.sort_by(|a, b| b.datetime.cmp(&a.datetime));
-                // self.events.sort_by_key(|x| x.datetime);
-                self.add_event = event::AddEvent::default();
-            }
-
-            egui::Window::new("Events").show(ctx, |ui| {
-                egui::ScrollArea::both().show(ui, |ui| {
-                    ui.vertical_centered(|ui| {
-                        for e in self.events.iter() {
-                            ui.label(
-                                egui::RichText::new(&e.datetime.to_string())
-                                    .color(egui::Color32::LIGHT_GRAY),
-                            );
-                            ui.label(&e.name);
-                            ui.label(&e.desc);
+            egui::ScrollArea::both().show(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    for e in self.events.iter() {
+                        {
+                            let mut name = e.name.clone();
+                            let mut desc = e.desc.clone();
+                            ui.label(&e.datetime.to_string());
+                            ui.label("Name:");
+                            ui.text_edit_singleline(&mut name);
+                            ui.label("Description:");
+                            ui.text_edit_multiline(&mut desc);
                             ui.separator();
                         }
-                    });
-                })
+                    }
+
+                    // show about window
+                    if self.about.open {
+                        self.about.show(ui)
+                    }
+
+                    // show add event window
+                    if self.add_event.open {
+                        self.add_event.show(ui);
+                    }
+                    // add new event if one is submitted
+                    if self.add_event.submitted {
+                        let e = self.add_event.event.clone();
+                        self.events.push(e);
+                        self.events.sort_by(|a, b| b.datetime.cmp(&a.datetime));
+                        self.add_event = event::AddEvent::default();
+                    }
+                });
             })
         });
 
@@ -146,6 +149,14 @@ impl eframe::App for TimelineApp {
 
                 if ui.button("Add Event").clicked() {
                     self.add_event.open = true
+                }
+            });
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::RIGHT), |ui| {
+                ui.add(toggle::toggle(&mut self.light));
+                if self.light {
+                    ctx.set_visuals(egui::Visuals::light())
+                } else {
+                    ctx.set_visuals(egui::Visuals::dark())
                 }
             })
         });
